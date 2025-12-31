@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>2025: Rose & Rolie Archive</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --white: #ffffff;
+      }
+      body {
+        background-color: var(--bg);
+        margin: 0;
+        height: 100dvh;
+        width: 100vw;
+        overflow: hidden;
+        font-family: "Segoe UI", sans-serif;
+        touch-action: none;
+        -webkit-user-select: none;
+      }
+
+      #desk {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background-image: radial-gradient(#333 1px, transparent 1px);
+        background-size: 30px 30px;
+      }
+
+      /* The Main Container */
+      .polaroid {
+        position: absolute;
+        perspective: 1000px;
+        cursor: grab;
+        z-index: 10;
+        transition: transform 0.3s ease;
+      }
+
+      /* The Flipping Inner Box */
+      .polaroid-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-style: preserve-3d;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      }
+
+      .polaroid.flipped .polaroid-inner {
+        transform: rotateY(180deg);
+      }
+
+      /* Front and Back Surfaces */
+      .front,
+      .back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        background: var(--white);
+        padding: 10px 10px 35px 10px;
+        box-sizing: border-box;
+        border-radius: 2px;
+      }
+
+      .front img {
+        width: 100%;
+        height: auto;
+        display: block;
+        pointer-events: none;
+      }
+
+      .caption {
+        position: absolute;
+        bottom: 8px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: #333;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      .back {
+        transform: rotateY(180deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fdfdfd;
+        border: 1px solid #ddd;
+      }
+
+      .back-text {
+        color: #555;
+        font-size: 13px;
+        text-align: center;
+        line-height: 1.4;
+        padding: 15px;
+      }
+
+      /* Zoom State */
+      .zoomed {
+        transform: scale(1.8) !important;
+        z-index: 9999 !important;
+      }
+
+      .instruction {
+        position: absolute;
+        top: 15px;
+        width: 100%;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 12px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="desk">
+      <div class="instruction">
+        Tap to Flip • Hold to Zoom • Drag to Arrange
+      </div>
+    </div>
+
+    <script>
+      // --- DATA SECTION: Add your folder images here ---
+      // Ensure folder 'memories/' is lowercase to avoid Vercel/GitHub errors
+      const memoryFiles = [
+        {
+          file: "memories/1v1.jpg",
+          caption: "1v1 Virtual Inuman 🍻",
+          note: "I love this picture of us! We literally had a mutual agreement to watch a movie and drink a whole bottle of soju HAHAHAHAH when ulit? 🤪",
+        },
+        {
+          file: "memories/bday_cake.jpg",
+          caption: "Birthday Cake? 🎂",
+          note: "Even though technically this wasn't for me, you got me emotional with this surprise cake tung birthday nako you made it that much more special babii, Thank youuu ❤️",
+        },
+        {
+          file: "memories/bday_gift.jpg",
+          caption: "Birthday Gift 🎁",
+          note: "For my birthday you got me this gift. I was really touched that you bought a gift for me even though you didn't need to. ❤️",
+        },
+        {
+          file: "memories/fav.jpg",
+          caption: "Favorite Picture of you 📸",
+          note: "Out of all the pictures I have of you, this one is my favorite. You look so happy and U really love the way you're smiling in this photo. 🥰",
+        },
+        {
+          file: "memories/fav_whole.jpg",
+          caption: "Favorite Picture na Buong Katawan 📸",
+          note: "This is my favorite full-body picture of you. You look so confident and beautiful in this outfit. Also the fact that we matched this outfit together just made it more meaningful.😍",
+        },
+        {
+          file: "memories/fav2.0.jpg",
+          caption: "Close Second for my favorite 📸",
+          note: "You literally just gave me this picture today and I already fell in love with it. You look so cute here babiii! ",
+        },
+        {
+          file: "memories/feedme.jpg",
+          caption: "Feed Me!",
+          note: "This picture maked me melt the first time you sent it to me. You are so cute gina suboan ko nimoo!😍",
+        },
+        {
+          file: "memories/hangover.jpg",
+          caption: "Hangover Breakfast😵",
+          note: "I really wanted to take care of you that morning after you got drunk the night before. Seeing you like that made me want to be there for you even more. ❤️ So I just took care of you the only way I can for now.",
+        },
+        {
+          file: "memories/heart.jpg",
+          caption: "My Heart ❤️",
+          note: "It took us a few minutes to finally get the perfect heart shape. I want a polaroid copy of this one babii 😍",
+        },
+        {
+          file: "memories/madam.jpg",
+          caption: "Hello Madam 💅",
+          note: "You have me this the other day. Ganahan kaayo ko sa hair nimo. You look gorgeous here babii! 🤩",
+        },
+        {
+          file: "memories/movie.jpg",
+          caption: "Movie Date 🎬",
+          note: "Remember this day? We were trying to finish this series but we couldn't ? HAHAHAHAHHA I love this series, specially watching it with you babii ❤️",
+        },
+        {
+          file: "memories/quirky.jpg",
+          caption: "Quirkyy Rosee 🤪",
+          note: "I scrolled through the pictures you sent me and I found these quirky pictures of you. I remember you being so happy you finally got the shirts you ordered. You even modelled them for me HAHHAHAHAHAH Thank you soo much for agreeing to my requests babii ❤️ I love how you're not afraid to show me your quirky and playful side, I love that, keep showing me parts I will love about you 😍",
+        },
+        {
+          file: "memories/sleepfirst.jpg",
+          caption: "You Slept First 😴",
+          note: "I was really happy you could sleep like that knowing that you trust me enough to just fall asleep while we're on a call. I love you so much babii ❤️",
+        },
+        {
+          file: "memories/receipts.jpg",
+          caption: "You Saved Them 🥰",
+          note: "I really appreciate that you value the things I give you babii. You really make me feel special and loved. Thank youuu ❤️",
+        },
+        {
+          file: "memories/sorry.jpg",
+          caption: "I'm Sorry 😔",
+          note: "First time I bought you food that had a note, pala away man gud kaayo ka Rolie ba HAHAHAHAHA I hope I made it up to you babii ❤️",
+        },
+        {
+          file: "memories/teddy.jpg",
+          caption: "Teddy 🧸",
+          note: "Merry Christmas babii! I hope you liked your teddy bear. I wanted to get you something soft and cuddly to remind you of me when we're not together. I love you so much ❤️",
+        },
+      ];
+
+      const desk = document.getElementById("desk");
+      let highestZ = 100;
+
+      memoryFiles.forEach((m) => {
+        const card = document.createElement("div");
+        card.className = "polaroid";
+
+        const img = new Image();
+        img.src = m.file;
+
+        img.onload = () => {
+          // --- CLIENT-SIDE RESIZER LOGIC ---
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          // Define max resolution while keeping aspect ratio
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to a compressed data URL to save browser memory
+          const compressedSrc = canvas.toDataURL("image/jpeg", 0.7);
+
+          // --- DYNAMIC POLAROID SIZING ---
+          const baseWidth = 170; // Ideal for iPhone
+          const ratio = height / width;
+          const calculatedHeight = baseWidth * ratio + 45;
+
+          card.style.width = `${baseWidth}px`;
+          card.style.height = `${calculatedHeight}px`;
+
+          card.innerHTML = `
+            <div class="polaroid-inner">
+                <div class="front">
+                    <img src="${compressedSrc}">
+                    <div class="caption">${m.caption}</div>
+                </div>
+                <div class="back">
+                    <div class="back-text">${m.note}</div>
+                </div>
+            </div>
+        `;
+
+          // Random positioning
+          const randX = Math.random() * (window.innerWidth - baseWidth - 20);
+          const randY =
+            100 + Math.random() * (window.innerHeight - calculatedHeight - 150);
+          const randRot = Math.random() * 24 - 12;
+
+          card.style.left = `${randX}px`;
+          card.style.top = `${randY}px`;
+          card.style.transform = `rotate(${randRot}deg)`;
+
+          setupLogic(card, randX, randY, randRot);
+          desk.appendChild(card);
+        };
+      });
+
+      function setupLogic(card, x, y, rot) {
+        let curX = x,
+          curY = y;
+        let startX, startY;
+        let startTime, zoomTimeout;
+        let hasMoved = false;
+
+        const onStart = (e) => {
+          card.style.zIndex = ++highestZ;
+          const p = e.touches ? e.touches[0] : e;
+          startX = p.clientX - curX;
+          startY = p.clientY - curY;
+          startTime = Date.now();
+          hasMoved = false;
+
+          // Zoom timer: Hold for 500ms to zoom
+          zoomTimeout = setTimeout(() => {
+            if (!hasMoved) card.classList.add("zoomed");
+          }, 500);
+        };
+
+        const onMove = (e) => {
+          const p = e.touches ? e.touches[0] : e;
+          const dx = p.clientX - (curX + startX);
+          const dy = p.clientY - (curY + startY);
+
+          // If they move more than 5px, it's a drag, not a tap or zoom
+          if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            hasMoved = true;
+            clearTimeout(zoomTimeout);
+            card.classList.remove("zoomed");
+          }
+
+          if (hasMoved) {
+            curX = p.clientX - startX;
+            curY = p.clientY - startY;
+            card.style.left = `${curX}px`;
+            card.style.top = `${curY}px`;
+          }
+        };
+
+        const onEnd = () => {
+          clearTimeout(zoomTimeout);
+          const duration = Date.now() - startTime;
+
+          // If they didn't move and it was a short tap, flip it
+          if (!hasMoved && duration < 300) {
+            card.classList.toggle("flipped");
+          }
+
+          card.classList.remove("zoomed");
+        };
+
+        card.addEventListener("touchstart", onStart, { passive: true });
+        card.addEventListener("touchmove", onMove, { passive: true });
+        card.addEventListener("touchend", onEnd);
+
+        card.addEventListener("mousedown", onStart);
+        document.addEventListener("mousemove", (e) => {
+          if (e.buttons === 1 && card.style.zIndex == highestZ) onMove(e);
+        });
+        document.addEventListener("mouseup", onEnd);
+      }
+    </script>
+  </body>
+</html>
